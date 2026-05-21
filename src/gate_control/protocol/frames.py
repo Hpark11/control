@@ -26,16 +26,18 @@ class Frame:
     ack: int | None = None
 
 
-def build_frame(command: int, data: bytes = b"", *, door: int = DEFAULT_DOOR, address: int = DEFAULT_ADDRESS) -> bytes:
+def build_frame(command: int, data: bytes = b"", *, door: int = DEFAULT_DOOR, address: int = DEFAULT_ADDRESS, rand: int = 0) -> bytes:
     if not 0 <= command <= 0xFF:
         raise ValueError("command must be a byte")
     if not 0 <= door <= 0xFF:
         raise ValueError("door must be a byte")
     if not 0 <= address <= 0xFF:
         raise ValueError("address must be a byte")
+    if not 0 <= rand <= 0xFF:
+        raise ValueError("rand must be a byte")
 
     length = len(data)
-    header = bytearray([STX, 0x00, command, address, door, length & 0xFF, (length >> 8) & 0xFF])
+    header = bytearray([STX, rand, command, address, door, length & 0xFF, (length >> 8) & 0xFF])
     body = header + bytearray(data)
     body.append(xor_checksum(body))
     body.append(ETX)

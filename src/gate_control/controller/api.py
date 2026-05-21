@@ -39,10 +39,18 @@ class ControllerApi:
         expires: datetime,
         name: str = "",
         system_option: int | None = None,
+        card_format: str = "captured",
+        permission: bytes | None = None,
+        rand: int = 0,
     ) -> CommandResult:
         heartbeat = self.session.require_heartbeat()
         option = heartbeat.system_option if system_option is None else system_option
-        payload = commands.add_card_1door(option, index, name, card_no, pin, tz, expires)
+        if card_format == "captured":
+            option = 0x01
+        if permission is not None:
+            payload = commands.add_card_with_permission_bytes(option, index, name, card_no, pin, permission, expires, rand)
+        else:
+            payload = commands.add_card_1door(option, index, name, card_no, pin, tz, expires, rand)
         return self.session.send_command(payload, timeout=3.0)
 
     def clear_card_slot(self, index: int, pin: str = "00000000", tz: int = 0, confirm: bool = False) -> CommandResult:

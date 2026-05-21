@@ -50,6 +50,14 @@ def build_parser() -> argparse.ArgumentParser:
     add_card.add_argument("--expires", required=True, help="YYYY-MM-DD")
     add_card.add_argument("--name", default="")
     add_card.add_argument("--system-option", type=lambda v: int(v, 0))
+    add_card.add_argument("--permission-hex", help="4 permission bytes, for example: 02 03 01 03")
+    add_card.add_argument("--rand", type=lambda v: int(v, 0), default=0, help="Rand byte, for example: 0x7B")
+    add_card.add_argument(
+        "--card-format",
+        choices=["captured", "heartbeat"],
+        default="captured",
+        help="captured = 17-byte AddCard like captured frame, heartbeat = use heartbeat SystemOption",
+    )
     add_card.set_defaults(func=cmd_add_card_1door)
 
     clear_slot = sub.add_parser("clear-card-slot")
@@ -132,6 +140,23 @@ def print_card_mode(heartbeat: HeartbeatStatus, override: int | None = None) -> 
     return raw_option
 
 
+def print_effective_card_format(card_format: str, heartbeat: HeartbeatStatus, override: int | None = None) -> int:
+    if card_format == "captured":
+        print("AddCard Format: captured 17-byte format (PIN2 + expiry + no name)")
+        return print_card_mode(heartbeat, 0x01)
+    print("AddCard Format: heartbeat SystemOption format")
+    return print_card_mode(heartbeat, override)
+
+
+def parse_permission_hex(value: str | None) -> bytes | None:
+    if not value:
+        return None
+    permission = from_hex(value)
+    if len(permission) != 4:
+        raise GateControlError("--permission-hex must contain exactly 4 bytes")
+    return permission
+
+
 def cmd_setup(args: argparse.Namespace) -> None:
     config = (
         ControllerConfig(host=args.host, port=args.port, oem_code=args.oem_code)
@@ -212,9 +237,21 @@ def cmd_add_card_1door(args: argparse.Namespace) -> None:
         heartbeat = api.status(timeout=10)
         if heartbeat is None:
             raise GateControlError("heartbeat/status was not received")
-        print_card_mode(heartbeat, args.system_option)
+        print_effective_card_format(args.card_format, heartbeat, args.system_option)
         expires = datetime.strptime(args.expires, "%Y-%m-%d")
-        result = api.add_card_1door(args.index, args.card_no, args.pin, args.tz, expires, args.name, args.system_option)
+        permission = parse_permission_hex(args.permission_hex)
+        result = api.add_card_1door(
+            args.index,
+            args.card_no,
+            args.pin,
+            args.tz,
+            expires,
+            args.name,
+            args.system_option,
+            args.card_format,
+            permission,
+            args.rand,
+        )
         print_result(result)
         if result.ok:
             print(f"Verifying card slot {args.index} ...")
@@ -317,7 +354,7 @@ def cmd_menu(args: argparse.Namespace) -> None:
                 heartbeat = preview_api.status(timeout=10)
                 if heartbeat is None:
                     raise GateControlError("heartbeat/status was not received")
-                print_card_mode(heartbeat)
+                print_effective_card_format("captured", heartbeat)
             finally:
                 preview_api.session.close()
             args.index = int(input("Card index: ").strip())
@@ -326,7 +363,10 @@ def cmd_menu(args: argparse.Namespace) -> None:
             args.tz = int(input("Timezone [1]: ").strip() or "1")
             args.expires = input("Expires YYYY-MM-DD: ").strip()
             args.name = input("Name []: ").strip()
+            args.permission_hex = input("Permission HEX [uses timezone]: ").strip() or None
+            args.rand = int(input("Rand byte [0]: ").strip() or "0", 0)
             args.system_option = None
+            args.card_format = "captured"
             cmd_add_card_1door(args)
         elif choice == "6":
             args.index = int(input("Card index: ").strip())

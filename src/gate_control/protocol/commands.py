@@ -51,6 +51,7 @@ def add_card(
     tz4: int = 0,
     status: int = 1,
     expires: datetime | None = None,
+    rand: int = 0,
 ) -> bytes:
     option = SystemOption(system_option)
     payload = bytearray()
@@ -69,10 +70,10 @@ def add_card(
     if option.has_name:
         payload.extend(put_name(name, 8))
 
-    return build_frame(CMD_ADD_CARD, bytes(payload), door=0)
+    return build_frame(CMD_ADD_CARD, bytes(payload), door=0, rand=rand)
 
 
-def add_card_1door(system_option: int, index: int, name: str, card_no: int, pin: str, tz: int, expires: datetime) -> bytes:
+def add_card_1door(system_option: int, index: int, name: str, card_no: int, pin: str, tz: int, expires: datetime, rand: int = 0) -> bytes:
     return add_card(
         system_option=system_option,
         index=index,
@@ -82,6 +83,34 @@ def add_card_1door(system_option: int, index: int, name: str, card_no: int, pin:
         tz1=tz & 0xFF,
         tz2=(tz >> 8) & 0xFF,
         expires=expires,
+        rand=rand,
+    )
+
+
+def add_card_with_permission_bytes(
+    system_option: int,
+    index: int,
+    name: str,
+    card_no: int,
+    pin: str,
+    permission: bytes,
+    expires: datetime,
+    rand: int = 0,
+) -> bytes:
+    if len(permission) != 4:
+        raise ValueError("permission must be exactly 4 bytes")
+    return add_card(
+        system_option=system_option,
+        index=index,
+        name=name,
+        card_no=card_no,
+        pin=pin,
+        tz1=permission[0],
+        tz2=permission[1],
+        tz3=permission[2],
+        tz4=permission[3],
+        expires=expires,
+        rand=rand,
     )
 
 
