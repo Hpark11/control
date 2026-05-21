@@ -1,0 +1,42 @@
+# Gate Control CLI
+
+Python 3.11 CLI for TCP access controllers.
+
+## Windows Setup
+
+Install Python 3.11 on Windows 10:
+
+```powershell
+winget install Python.Python.3.11
+```
+
+If `winget` is unavailable:
+
+```powershell
+Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe" -OutFile "$env:TEMP\python-3.11.9-amd64.exe"
+Start-Process "$env:TEMP\python-3.11.9-amd64.exe" -ArgumentList "/quiet InstallAllUsers=1 PrependPath=1 Include_pip=1" -Wait
+```
+
+## Run From Source
+
+```powershell
+cd control
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e .[dev]
+gate-control setup
+gate-control menu
+```
+
+## Common Commands
+
+```powershell
+gate-control status
+gate-control monitor
+gate-control open-door --door 0
+gate-control add-card-1door --index 50000 --card-no 999998 --pin 999998 --tz 1 --expires 2027-05-21
+gate-control clear-card-slot --index 50000 --confirm
+```
+
+Destructive commands require `--confirm`.
+# control
