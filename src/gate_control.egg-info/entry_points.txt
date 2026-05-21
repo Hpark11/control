@@ -1,0 +1,2 @@
+[console_scripts]
+gate-control = gate_control.cli:main

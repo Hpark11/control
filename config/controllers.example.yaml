@@ -1,0 +1,4 @@
+default:
+  host: 192.168.0.126
+  port: 8000
+  oem_code: 23456
