@@ -39,4 +39,3 @@ gate-control clear-card-slot --index 50000 --confirm
 ```
 
 Destructive commands require `--confirm`.
-# control
