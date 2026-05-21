@@ -58,6 +58,7 @@ class CardStatusEvent:
 class CommandResult:
     ok: bool
     command: int
+    request: bytes | None = None
     response: bytes | None = None
     message: str = ""
     ack: int | None = None

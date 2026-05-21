@@ -78,12 +78,12 @@ def parse_card_status_event(frame: Frame) -> CardStatusEvent:
 def parse_response(raw: bytes, expected_command: int | None = None) -> CommandResult:
     frame = parse_frame(raw)
     if expected_command is not None and frame.command != expected_command:
-        return CommandResult(False, frame.command, frame.raw, f"unexpected command 0x{frame.command:02X}", frame.ack)
+        return CommandResult(False, frame.command, response=frame.raw, message=f"unexpected command 0x{frame.command:02X}", ack=frame.ack)
     if frame.data and frame.data[0] == ACK_OK:
-        return CommandResult(True, frame.command, frame.raw, "ACK", frame.data[0])
+        return CommandResult(True, frame.command, response=frame.raw, message="ACK", ack=frame.data[0])
     if frame.data and frame.data[0] == ACK_FAIL:
-        return CommandResult(False, frame.command, frame.raw, "FAIL", frame.data[0])
-    return CommandResult(True, frame.command, frame.raw, "response", frame.ack)
+        return CommandResult(False, frame.command, response=frame.raw, message="FAIL", ack=frame.data[0])
+    return CommandResult(True, frame.command, response=frame.raw, message="response", ack=frame.ack)
 
 
 def parse_event(frame: Frame, serial_no: str | None = None) -> object | None:

@@ -118,6 +118,8 @@ def print_result(result) -> None:  # noqa: ANN001
     print(f"Command: 0x{result.command:02X}")
     if result.message:
         print(f"Message: {result.message}")
+    if result.request:
+        print(f"TX: {to_hex(result.request, ' ')}")
     if result.response:
         print(f"RX: {to_hex(result.response, ' ')}")
 

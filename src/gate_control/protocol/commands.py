@@ -28,15 +28,15 @@ def history_event_ack(command: int, return_index: int) -> bytes:
 
 
 def clear_all_cards() -> bytes:
-    return build_frame(CMD_CLEAR_ALL_CARDS)
+    return build_frame(CMD_CLEAR_ALL_CARDS, door=0)
 
 
 def delete_card(index: int) -> bytes:
-    return build_frame(CMD_DELETE_CARD, u16le(index))
+    return build_frame(CMD_DELETE_CARD, u16le(index), door=0)
 
 
 def set_card_status(index: int, status: int) -> bytes:
-    return build_frame(CMD_SET_CARD_STATUS, u16le(index) + bytes([status & 0xFF]))
+    return build_frame(CMD_SET_CARD_STATUS, u16le(index) + bytes([status & 0xFF]), door=0)
 
 
 def add_card(
@@ -69,7 +69,7 @@ def add_card(
     if option.has_name:
         payload.extend(put_name(name, 8))
 
-    return build_frame(CMD_ADD_CARD, bytes(payload))
+    return build_frame(CMD_ADD_CARD, bytes(payload), door=0)
 
 
 def add_card_1door(system_option: int, index: int, name: str, card_no: int, pin: str, tz: int, expires: datetime) -> bytes:
@@ -249,4 +249,4 @@ def add_holiday(index: int, from_date: datetime, to_date: datetime) -> bytes:
 
 
 def search_card(index: int) -> bytes:
-    return build_frame(CMD_SEARCH_CARD, u16le(index))
+    return build_frame(CMD_SEARCH_CARD, u16le(index), door=0)

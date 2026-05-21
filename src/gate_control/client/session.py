@@ -75,14 +75,16 @@ class GateClientSession:
         try:
             self.transport.send(payload)
             if not expect_response:
-                return CommandResult(True, command, None, "sent")
+                return CommandResult(True, command, request=payload, message="sent")
 
             deadline = datetime.now().timestamp() + timeout
             while datetime.now().timestamp() < deadline:
                 frames = self.receive_once(timeout=max(0.1, min(1.0, deadline - datetime.now().timestamp())))
                 for frame in frames:
                     if frame.command == command:
-                        return parse_response(frame.raw, expected_command=command)
+                        result = parse_response(frame.raw, expected_command=command)
+                        result.request = payload
+                        return result
             raise CommandTimeoutError(f"timeout waiting for command 0x{command:02X}")
         finally:
             self.state.busy = False
