@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from gate_control.domain.errors import ProtocolError
+
 
 def u16le(value: int) -> bytes:
     return int(value).to_bytes(2, "little", signed=False)
@@ -33,7 +35,12 @@ def put_hour_minute(value: datetime) -> bytes:
 
 
 def put_pin2(pin: str | int | None) -> bytes:
-    value = int(pin or 0)
+    try:
+        value = int(pin or 0)
+    except ValueError as exc:
+        raise ProtocolError("PIN must be numeric in 2-byte PIN mode") from exc
+    if not 0 <= value <= 0xFFFF:
+        raise ProtocolError("PIN is too large for 2-byte PIN mode. Use 0-65535, or verify SystemOption/PIN mode.")
     return u16be(value)
 
 

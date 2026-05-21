@@ -9,6 +9,7 @@ from gate_control.client.session import GateClientSession
 from gate_control.config import resolve_controller
 from gate_control.domain.errors import GateControlError, UnsafeCommandError
 from gate_control.domain.models import ControllerConfig, HeartbeatStatus
+from gate_control.domain.system_option import SystemOption
 from gate_control.prompts import confirm, prompt_controller
 from gate_control.protocol.frames import parse_frame
 from gate_control.service.settings_store import SettingsStore
@@ -121,6 +122,14 @@ def print_result(result) -> None:  # noqa: ANN001
         print(f"RX: {to_hex(result.response, ' ')}")
 
 
+def print_card_mode(heartbeat: HeartbeatStatus, override: int | None = None) -> int:
+    raw_option = heartbeat.system_option if override is None else override
+    option = SystemOption(raw_option)
+    print(f"System Option: 0x{raw_option:02X} ({option.describe()})")
+    print("PIN Mode: 4-byte PIN" if option.uses_pin4 else "PIN Mode: 2-byte PIN (0-65535)")
+    return raw_option
+
+
 def cmd_setup(args: argparse.Namespace) -> None:
     config = (
         ControllerConfig(host=args.host, port=args.port, oem_code=args.oem_code)
@@ -198,10 +207,16 @@ def cmd_set_time(args: argparse.Namespace) -> None:
 def cmd_add_card_1door(args: argparse.Namespace) -> None:
     api = create_api(resolve_or_prompt(args))
     try:
-        api.status(timeout=10)
+        heartbeat = api.status(timeout=10)
+        if heartbeat is None:
+            raise GateControlError("heartbeat/status was not received")
+        print_card_mode(heartbeat, args.system_option)
         expires = datetime.strptime(args.expires, "%Y-%m-%d")
         result = api.add_card_1door(args.index, args.card_no, args.pin, args.tz, expires, args.name, args.system_option)
         print_result(result)
+        if result.ok:
+            print(f"Verifying card slot {args.index} ...")
+            print_result(api.search_card(args.index))
     finally:
         api.session.close()
 
@@ -294,6 +309,15 @@ def cmd_menu(args: argparse.Namespace) -> None:
             args.door = int(input("Door [0]: ").strip() or "0")
             cmd_close_door(args)
         elif choice == "5":
+            current_config = resolve_or_prompt(args)
+            preview_api = create_api(current_config)
+            try:
+                heartbeat = preview_api.status(timeout=10)
+                if heartbeat is None:
+                    raise GateControlError("heartbeat/status was not received")
+                print_card_mode(heartbeat)
+            finally:
+                preview_api.session.close()
             args.index = int(input("Card index: ").strip())
             args.card_no = int(input("Card No: ").strip())
             args.pin = input("PIN: ").strip()

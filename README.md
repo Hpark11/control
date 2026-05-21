@@ -39,3 +39,6 @@ gate-control clear-card-slot --index 50000 --confirm
 ```
 
 Destructive commands require `--confirm`.
+
+If the controller reports 2-byte PIN mode, PIN must be numeric and within `0-65535`.
+`Card No` may still be larger, for example `999998`.

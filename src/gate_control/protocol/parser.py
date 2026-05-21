@@ -10,27 +10,28 @@ from .frames import Frame, parse_frame
 
 def parse_heartbeat(frame: Frame) -> HeartbeatStatus:
     raw = frame.raw
-    if len(raw) < 40:
+    if len(raw) < 41:
         raise ProtocolError("heartbeat frame is too short")
 
-    year = raw[7] + 2000
-    month = raw[8]
-    day = raw[9]
-    hour = raw[10]
-    minute = raw[11]
-    second = raw[12]
-    serial = raw[27:33].decode("ascii", errors="ignore").strip("\x00 ")
+    # RTCPStatus has one reserved byte (N1) before the 6-byte time field.
+    year = raw[8] + 2000
+    month = raw[9]
+    day = raw[10]
+    hour = raw[11]
+    minute = raw[12]
+    second = raw[13]
+    serial = raw[28:34].decode("ascii", errors="ignore").strip("\x00 ")
     return HeartbeatStatus(
         serial_no=serial,
         datetime=safe_datetime(year, month, day, hour, minute, second),
-        door_status=raw[13],
-        card_num_in_pack=raw[14],
-        system_option=raw[16],
-        version=str(raw[24]),
-        oem_code=int.from_bytes(raw[25:27], "little", signed=False),
-        input_status=int.from_bytes(raw[33:35], "little", signed=False),
-        index_cmd=int.from_bytes(raw[35:39], "little", signed=False),
-        cmd_ok=raw[39],
+        door_status=raw[14],
+        card_num_in_pack=raw[15],
+        system_option=raw[17],
+        version=str(raw[25]),
+        oem_code=int.from_bytes(raw[26:28], "little", signed=False),
+        input_status=int.from_bytes(raw[34:36], "little", signed=False),
+        index_cmd=int.from_bytes(raw[36:40], "little", signed=False),
+        cmd_ok=raw[40],
     )
 
 
